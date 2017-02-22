@@ -12,12 +12,18 @@ public class CPU {
 	 * AC: Accumulator - temporaty storage
 	 * X,Y:General registers
 	 */
-	static int debug = 0; // debug mode
-	static int PC=0;
-	static int SP = 2000; // System stack
+	final static int timer_interrupt_addr	= 1000;
+	final static int int_interrupt_addr 	= 1500;
+	final static int system_stack 			= 2000;
+	final static int user_stack				= 1000;
+	static int kernelMode_flag 				= 0;
+	static int debug 						= 0; // debug mode
+	static int PC							=0;
+	static int SP 							= system_stack; // System stack
 	static int IR,AC,X,Y;
 	static PrintWriter PW;
 	static Scanner SC;
+
 	public static void main (String args[]){
 		try{
 			String program = args[0];
@@ -109,6 +115,9 @@ public class CPU {
 		        read_status = readMemory(PC);
 		        if (read_status != -1){
 		        	exec_status = programExecution();
+		        	if (debug == 1){
+		        		System.out.println("--------------------------------");
+		        	}
 		        	if (exec_status == -1)
 		        		// Read the end of program
 		        		System.exit(0);
@@ -132,8 +141,8 @@ public class CPU {
 	}
 	public static int readMemory(int addr){
 		String cmd = "1 "+ addr +"\n";
-		if (debug == 1)
-			System.out.println("Addr: "+ addr); // for debug
+//		if (debug == 1)
+//			System.out.println("Addr: "+ addr); // for debug
 		PW.printf(cmd);
 		PW.flush();
 		
@@ -145,7 +154,7 @@ public class CPU {
             {
             	IR  = Integer.parseInt(cmd);
             	if (debug == 1)
-            		System.out.println(IR); // for debug
+            		System.out.println("Addr: " + addr + " IR: " + IR); // for debug
             		
 //            	PC++;
             	return 0;
@@ -165,130 +174,164 @@ public class CPU {
 		readMemory(PC);
 		return IR;
 	}
-	// Read from Memory, update value of IR
-//	public static int readMemory(PrintWriter pw,Scanner sc){
-//		String cmd = "1 "+ PC +"\n";
-//		PC++;
-//		pw.printf(cmd);
-//		pw.flush();
-//		
-//		// Read the instruction code returned from Memory
-//        if (sc.hasNext())
-//        {
-//            cmd = sc.next();
-//            if(!cmd.isEmpty())
-//            {
-//            	IR  = Integer.parseInt(cmd);
-//            	System.out.println(IR);
-////            	PC++;
-//            	return 0;
-//            }else{
-//            	return -1;
-//            }
-//        }
-//        return -1;        
-//	}
+	
 	// Execute the instruction retrieved from Memory and increase PC by 1
 //	public static int programExecution(PrintWriter pw, Scanner sc){
 	public static int programExecution(){
-		int parameter;
+//		int parameter;
 		if (debug == 1)
 			System.out.println("ACC: "+AC);	
 		switch(IR){
 		case 1:
 			if (debug == 1)
-				System.out.println("LOAD");			
-			load(readNextParameter());
+				System.out.println("1.LOAD VALUE");			
+			load_value(readNextParameter());
 			break;
 		case 2:
+			if (debug == 1)
+				System.out.println("2.LOAD ADDR");
+			load_addr(readNextParameter());
+			break;
 		case 3:
+			if (debug == 1)
+				System.out.println("3.LOAD IND ");
+			loadInd(readNextParameter());
+			break;
 		case 4:
 			if (debug == 1)
-				System.out.println("LOAD IDX");	
+				System.out.println("4.LOAD IDX");	
 			loadIdxX(readNextParameter());
 			break;
 		case 5:
 			if (debug == 1)
-				System.out.println("LOAD IDY");	
+				System.out.println("5.LOAD IDY");	
 			loadIdxY(readNextParameter());
 			break;
 		case 6:	
+			if (debug == 1)
+				System.out.println("6.LOAD SPX");	
+			loadSpX();
+			break;			
 		case 7:
+			if (debug == 1)
+				System.out.println("7.STORE");	
+			store(readNextParameter());
+			break;
 		case 8:
 			if (debug == 1)
-				System.out.println("GET");
+				System.out.println("8.GET RANDOM");
 			get();
 			break;
 		case 9:	
 			if (debug == 1)
-				System.out.println("PUT");
+				System.out.println("9.PUT");
 			put(readNextParameter());
 			break;
 		case 10:
 			if (debug == 1)
-				System.out.println("ADDX");
+				System.out.println("10.ADDX");
 			addX();
 			break;
 		case 11:
 			if (debug == 1)
-				System.out.println("ADDY");
+				System.out.println("11.ADDY");
 			addY();
 			break;
 		case 12:
+			if (debug == 1)
+				System.out.println("12.SUB X");	
+			subX();
+			break;
 		case 13:
+			if (debug == 1)
+				System.out.println("13. SUB Y");	
+			subY();
+			break;
 		case 14:
 			if (debug == 1)
-				System.out.println("CopyToX");
+				System.out.println("14.COPY TO X");
 			copyToX();
 			break;
 		case 15:
+			if (debug == 1)
+				System.out.println("15.COPY FROM X");	
+			copyFromX();
+			break;
 		case 16:
 			if (debug == 1)
-				System.out.println("CopyToY");
+				System.out.println("16.COPY TO X");
 			copyToY();
 			break;
 		case 17:
-		case 18:	
+			if (debug == 1)
+				System.out.println("17.COPY FROM Y");	
+			copyFromY();
+			break;
+		case 18:
+			if (debug == 1)
+				System.out.println("18.COPY TO SP");	
+			copytoSP();
+			break;
 		case 19:
+			if (debug == 1)
+				System.out.println("19.COPY FROM SP");	
+			copyFromSP();
+			break;
 		case 20:	
 			if (debug == 1)
-				System.out.println("Jump");
+				System.out.println("20.JUMP");
 			jump(readNextParameter());
 			return 0;
 		case 21:
 			if (debug == 1)
-				System.out.println("JumpIfEqual");
+				System.out.println("21.JUMP IF EQUAL");
 			jumpIfEqual(readNextParameter());
 			return 0;
 		case 22:
 			if (debug == 1)
-				System.out.println("JumpIfNotEqual");
+				System.out.println("22.JUMP IF NOT EQUAL");
 			jumpIfNotEqual(readNextParameter());
 			return 0;
 		case 23:
 			if (debug == 1)
-				System.out.println("CALL");
+				System.out.println("23.CALL");
 			call(readNextParameter());
 			return 0;
 		case 24:
 			if (debug == 1)
-				System.out.println("RET");
+				System.out.println("24.RET");
 			ret();
 			return 0;
 		case 25:
 			if (debug == 1)
-				System.out.println("INC X");
+				System.out.println("25.INC X");
 			incX();
 			break;
 		case 26:
 			if (debug == 1)
-				System.out.println("DEC X");
+				System.out.println("26.DEC X");
 			decX();
 			break;
 		case 27:
+			if (debug == 1)
+				System.out.println("27.PUSH");
+			push(AC);
+			break;			
 		case 28:
+			if (debug == 1)
+				System.out.println("28.POP");
+			AC = pop();
+			break;
 		case 29:
+			if (debug == 1)
+				System.out.println("29.SYSTEM CALL");
+			Int();
+			return 0;
 		case 30:	
+			if (debug == 1)
+				System.out.println("30.RETURN SYSTEM CALL");
+			IRet();
+			return 0;
 		case 50:	
 //			End();
 			if (debug == 1)
@@ -304,7 +347,7 @@ public class CPU {
 	}
 
 	//	2.Load the value at the address into the AC
-	public static void load(int addr){
+	public static void load_addr(int addr){
 		AC = addr;
 	}
 
@@ -330,12 +373,14 @@ public class CPU {
 
 	//	6. Load from (Sp+X) into the AC 
 	//	(if SP is 990, and X is 1, load from 991).
-	public static void loadSpX(int addr){
-
+	public static void loadSpX(){
+		readMemory(SP + X);
+		AC = IR;
 	}
 
 	//	7. Store the value in the AC into the address
 	public static void store(int addr){
+		writeMemory(addr,AC);
 	}
 
 	//	8. Gets a random int from 1 to 100 into the AC
@@ -454,24 +499,44 @@ public class CPU {
 	}
 
 	//	27. Push AC onto stack
-	public static void push(){
+	public static void push(int value){
 		SP --;
-		writeMemory(SP, AC);
+		writeMemory(SP, value);
 	}
 
 	//	28. Pop from stack into AC
-	public static void pop(){
+	public static int pop(){
+		readMemory(SP);
+//		AC = IR; // perform in execution
 		SP ++;
+		return IR;
 	}
 
 	//	29. Perform system call
 	public static void Int(){
-
+		kernelMode();
+		PC = int_interrupt_addr; //1500
 	}
-
+	public static void kernelMode(){
+		push(PC+1);
+		push(AC);
+		push(SP);
+		push(IR);
+		push(X);
+		push(Y);
+		SP = 2000;
+		kernelMode_flag = 1;
+		
+	}
 	//	30. Return from system call
 	public static void IRet(){
-
+		Y	= pop();
+		X	= pop();
+		IR	= pop(); 
+		SP	= pop();
+		AC	= pop();
+		PC	= pop();
+		kernelMode_flag = 0;
 	}
 
 	//	50. End execution

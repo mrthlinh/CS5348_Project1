@@ -19,7 +19,7 @@ public class Memory {
 			// Take the filename at the input
 			Scanner CPU_cmd = new Scanner(System.in);
 			String filename = args[0];
-//						String filename = "sample1.txt";
+//			String filename = "sample3.txt";
 
 			// Save the instructions to memory
 			saveInstruction(filename);
@@ -92,17 +92,23 @@ public class Memory {
 			Scanner file = new Scanner(new File(filename));
 			int i = 0;
 			String st;
+			
 			while(file.hasNextLine()){
+//				System.out.println("Loop: "+i);
 				if (file.hasNextInt()){
 					mem[i] = file.nextInt();
 					file.nextLine();
 					i++;
 				}else{
-					st = file.next();
-					if (st.charAt(0) == '.')
-						i = Integer.parseInt(st.substring(1));
-					else
-						file.nextLine();
+					try{
+						st = file.next();
+						if (st.charAt(0) == '.')
+							i = Integer.parseInt(st.substring(1));
+						else
+							file.nextLine();
+					}catch(Throwable e){
+					}
+
 				}
 			}
 			file.close();
