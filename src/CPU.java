@@ -16,33 +16,36 @@ public class CPU {
 	final static int int_interrupt_addr 	= 1500;
 	final static int system_stack 			= 2000;
 	final static int user_stack				= 1000;
+	static int timer_interrupt_flag			= 0;
 	static int kernelMode_flag 				= 0;
 	static int debug 						= 0; // debug mode
-	static int PC							=0;
-	static int SP 							= system_stack; // System stack
+	static int PC							= 0;
+	static int SP 							= user_stack; // System stack
 	static int IR,AC,X,Y;
 	static PrintWriter PW;
 	static Scanner SC;
+	static int count;
 
 	public static void main (String args[]){
 		try{
-			String program = args[0];
-			debug = Integer.parseInt(args[1]); // for Debug
+			String program 	= args[0];
+			int TimeOut 	= Integer.parseInt(args[1]); 
+			debug 			= Integer.parseInt(args[2]); // for Debug
 			// Run the process of Memory
-			Runtime rt = Runtime.getRuntime();
+			Runtime rt 		= Runtime.getRuntime();
 //			Process proc = rt.exec("java -cp bin Memory program1");
 //			Process proc = rt.exec("java -cp bin Memory program1");
-			Process proc = rt.exec("java Memory "+program);
+			Process proc 	= rt.exec("java Memory "+program);
 			// InputStream:		read from destination (Memory process)
 			// OutputStream:	send to destination (Memory process)
 			InputStream is  = proc.getInputStream();
 			OutputStream os = proc.getOutputStream();
 			
 			// Initialize Writer to destination
-			PrintWriter pw = new PrintWriter(os);
+			PrintWriter pw	= new PrintWriter(os);
 			
 			// Initialize Scanner to read returndata from Memory 
-			Scanner sc = new Scanner(is);
+			Scanner sc 		= new Scanner(is);
 			PW = pw;
 			SC = sc;
 			// Sample one read from CPU
@@ -86,6 +89,8 @@ public class CPU {
 //			int instruction;
 			int read_status = 0;
 			int exec_status = 0;
+//			int count = 0;
+			count = 0;
 			// Read all instruction
 			While_Loop:
 			while (true){
@@ -112,10 +117,38 @@ public class CPU {
 //		        }
 		        //-----------------------------------------------------
 //		        read_status = readMemory(pw,sc);
-		        read_status = readMemory(PC);
-		        if (read_status != -1){
-		        	exec_status = programExecution();
+				read_status = readMemory(PC);
+				if (read_status != -1){
+					exec_status = programExecution();
+					
+					// new -------------------------------
+					if (kernelMode_flag == 0){
+						if (count % TimeOut == 0 && count != 0){
+							kernelMode();
+							PC = 1000;
+							//count = 0;		
+							if (debug == 1){
+								System.out.println("------TIMER INTERRUPT------");
+							}
+						}
+						count ++;
+					}
+					// --------------------------------------
+//		        	if (count % TimeOut == 0 && count != 0){	
+//		        		if (kernelMode_flag == 0){
+//			        		kernelMode();
+//			        		PC = 1000;
+////			        		count = 0;		
+//				        	if (debug == 1){
+//				        		System.out.println("------TIMER INTERRUPT------");
+//				        	}
+//		        		}
+//		        	}
+//		        	count ++;
+		        	// ------------------------------------------
 		        	if (debug == 1){
+		        		System.out.println("Kenerl Mode: " + kernelMode_flag);
+		        		System.out.println("TIMER: " + count);
 		        		System.out.println("--------------------------------");
 		        	}
 		        	if (exec_status == -1)
@@ -139,30 +172,46 @@ public class CPU {
 			t.printStackTrace();
 		}
 	}
+	
+	public static boolean MemoryViolation(int addr){
+		return (kernelMode_flag == 0 && addr >= 1000) ? true : false;
+//		if (kernelMode_flag == 0 && addr > 1000){
+//			return true;
+//		}else{
+//			return false;
+//		}
+	}
+	
 	public static int readMemory(int addr){
-		String cmd = "1 "+ addr +"\n";
-//		if (debug == 1)
-//			System.out.println("Addr: "+ addr); // for debug
-		PW.printf(cmd);
-		PW.flush();
-		
-		// Read the instruction code returned from Memory
-        if (SC.hasNext())
-        {
-            cmd = SC.next();
-            if(!cmd.isEmpty())
-            {
-            	IR  = Integer.parseInt(cmd);
-            	if (debug == 1)
-            		System.out.println("Addr: " + addr + " IR: " + IR); // for debug
-            		
-//            	PC++;
-            	return 0;
-            }else{
-            	return -1;
-            }
-        }
-        return -1;        
+		if (MemoryViolation(addr)){
+			System.out.println("Memory Violation in User Mode");
+			System.exit(-1);
+//			return -1;
+		}else{
+			String cmd = "1 "+ addr +"\n";
+//			if (debug == 1)
+//				System.out.println("Addr: "+ addr); // for debug
+			PW.printf(cmd);
+			PW.flush();
+			
+			// Read the instruction code returned from Memory
+	        if (SC.hasNext())
+	        {
+	            cmd = SC.next();
+	            if(!cmd.isEmpty())
+	            {
+	            	IR  = Integer.parseInt(cmd);
+	            	if (debug == 1)
+	            		System.out.println("Addr: " + addr + " IR: " + IR); // for debug
+	            		
+//	            	PC++;
+	            	return 0;
+	            }else{
+	            	return -1;
+	            }
+	        }   
+		}  
+		return -1; 
 	}
 	public static void writeMemory(int addr, int value){
 		String cmd = "2 " + addr + " " + value + "\n";
@@ -174,13 +223,19 @@ public class CPU {
 		readMemory(PC);
 		return IR;
 	}
+//	public static void timer_interruptHanler(){
+//		kernelMode();
+//		PC = 1000;		
+//    	if (debug == 1)
+//    		System.out.println("TIMER INTERRUPT");
+//	}
 	
 	// Execute the instruction retrieved from Memory and increase PC by 1
 //	public static int programExecution(PrintWriter pw, Scanner sc){
 	public static int programExecution(){
 //		int parameter;
 		if (debug == 1)
-			System.out.println("ACC: "+AC);	
+			System.out.println("PC: "+ PC + " SP: " + SP + " AC: " + AC + " X: " + X + " Y: " + Y);	
 		switch(IR){
 		case 1:
 			if (debug == 1)
@@ -325,12 +380,14 @@ public class CPU {
 		case 29:
 			if (debug == 1)
 				System.out.println("29.SYSTEM CALL");
+			PC++;
 			Int();
 			return 0;
 		case 30:	
 			if (debug == 1)
 				System.out.println("30.RETURN SYSTEM CALL");
 			IRet();
+//			count = 0;
 			return 0;
 		case 50:	
 //			End();
@@ -348,13 +405,15 @@ public class CPU {
 
 	//	2.Load the value at the address into the AC
 	public static void load_addr(int addr){
-		AC = addr;
+		readMemory(addr);
+		AC = IR;
 	}
 
 	//	3.Load the value from the address found in the given address into the AC
 	//	(for example, if LoadInd 500, and 500 contains 100, then load from 100).
 	public static void loadInd(int addr){
 		readMemory(addr);
+		readMemory(IR);
 		AC = IR;
 	}
 
@@ -398,12 +457,12 @@ public class CPU {
 	public static void put(int port){
 		if (port == 1){
 			if (debug == 1)	
-				System.out.println("Result is: "+ AC);
+				System.out.println("-----------------------------Result is: "+ AC);
 			else
 				System.out.print(AC);
 		}else if (port == 2){
 			if (debug == 1)	
-				System.out.println("Result is: "+ (char)AC);
+				System.out.println("-----------------------------Result is: "+ (char)AC);
 			else
 				System.out.print((char)AC);
 		}
@@ -518,24 +577,31 @@ public class CPU {
 		PC = int_interrupt_addr; //1500
 	}
 	public static void kernelMode(){
-		push(PC+1);
-		push(AC);
-		push(SP);
-		push(IR);
-		push(X);
-		push(Y);
-		SP = 2000;
+		if (debug == 1)
+			System.out.println("PUSH TO STACK \nPC: "+ PC + " SP: " + SP + " AC: " + AC + " X: " + X + " Y: " + Y );	
+		int SP_current = SP;
+		SP = system_stack;
+		push(SP_current); // must push first
+		push(PC);
+//		push(AC);		
+//		push(IR);
+//		push(X);
+//		push(Y);	
+//		SP = 2000;
 		kernelMode_flag = 1;
 		
 	}
 	//	30. Return from system call
-	public static void IRet(){
-		Y	= pop();
-		X	= pop();
-		IR	= pop(); 
-		SP	= pop();
-		AC	= pop();
+	public static void IRet(){		
+//		Y	= pop();
+//		X	= pop();
+//		IR	= pop();
+//		AC	= pop();
 		PC	= pop();
+		SP	= pop(); // Pop Last
+		if (debug == 1)
+			System.out.println("POP FROM STACK \nPC: "+ PC + " SP: " + SP + " AC: " + AC + " X: " + X + " Y: " + Y );	
+		
 		kernelMode_flag = 0;
 	}
 
