@@ -19,7 +19,7 @@ public class Memory {
 			// Take the filename at the input
 			Scanner CPU_cmd = new Scanner(System.in);
 			String filename = args[0];
-//			String filename = "sample3.txt";
+//			String filename = "sample1.txt";
 
 			// Save the instructions to memory
 			saveInstruction(filename);
