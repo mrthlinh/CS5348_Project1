@@ -1,0 +1,74 @@
+2		// Load Iterator
+801
+21		// Jump if equal -> print count
+20
+14		// Copy to X
+26		// Dec X by 1 because address start from 0
+4		// LoadIdxX data at given index
+900
+16		// copy to Y
+1		// load
+5
+13		// Sub Y
+22		// Jump if Not equal
+16
+23		// Call -> increase count by 1
+700
+23		// Call -> decrease iterator by 1 - Line 16
+600
+20		// jump to the beginning
+0
+2		// load count - Line 20
+800
+9		// print the value of count
+1
+50		// end program
+
+.600	// decrease iterator by 1
+2		// load iterator
+801
+14		// copy to X
+26		// decrease X by 1
+15		// copy from X
+7		// store iterator
+801
+24		// return
+
+.700	// increase count by 1
+2		// load count
+800
+14		// copy to X
+25		// increase X by 1
+15		// copy from X
+7		// store iterator
+800
+24		// return
+
+.800	// Variable
+0		// count value
+20		// Iterator
+
+.900	// Array of 20 numbers
+0
+5
+1
+10
+3
+12
+23
+5
+19
+20
+0
+4
+1
+10
+3
+12
+23
+5
+19
+20
+
+.1000	// timer interrupt
+30		// just return

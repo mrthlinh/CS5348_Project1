@@ -7,66 +7,51 @@ import java.util.Scanner;
  *
  */
 public class Memory {
+	
 	final static int mem_size = 2000;
-	final static int[] mem = new int[mem_size];
-	// User code: 0->1000
-	final int user_program_topstack = 1000;
-	// System code: 1001 -> 2000
-	final int system_program_topstack = 2000;
+	final static int[] mem = new int[mem_size];	// Initialize Memory
+	final int user_program_topstack = 1000;		// User code: 0->999
+	final int system_program_topstack = 2000;	// System code: 1000 -> 1999
 
 	public static void main (String args[]){
 		try{
-			// Take the filename at the input
-			Scanner CPU_cmd = new Scanner(System.in);
-			String filename = args[0];
-//			String filename = "sample1.txt";
-
-			// Save the instructions to memory
-			saveInstruction(filename);
-
-			// Listen to the CPU command
-			//			Scanner CPU_cmd = new Scanner(System.in);
+			
+			Scanner CPU_cmd = new Scanner(System.in); 
+			String filename = args[0];			// Take the filename at the input			
+			saveInstruction(filename);			// Save the instructions to memory
+			
 			int num;
-			String n;
+			String st;
 
-			// One sample running
-			//			if (CPU_cmd.hasNextLine()){
-			//				
-			//				n = CPU_cmd.nextLine();
-			//				String [] j = n.split(" "); 
-			//				int opcode = Integer.parseInt(j[0]);
-			//				int addr    = Integer.parseInt(j[1]);
-			//				if (opcode == 1){
-			//					System.out.print(read(addr));					
-			//				}		
-			//			}
-			//----------------------------------------------------
-
-			// while loop running -----------------------------------
+			// Communicate with processor	---------------------------------------------
 			while(true)
 			{
 				if(CPU_cmd.hasNext())
 				{
-					n = CPU_cmd.nextLine(); //read the comma delimited line sent by the CPU
-					if(!n.isEmpty())
+					st = CPU_cmd.nextLine(); 		// Read the space delimited line sent by the CPU
+					
+					if(st.length() != 0)
 					{
-						String [] j = n.split(" "); //split the line to get the necessary tokens
+						String [] cmd = st.split(" "); // Split the line to get the necessary tokens
 
-						//  if first token is 1 then CPU is requesting to read 
-						//  from an address
-						if(j[0].equals("1"))    
+						//  First token: 1 -> read
+						if(cmd[0].equals("1"))    
 						{
-							num = Integer.parseInt(j[1]);
-							System.out.println(read(num));// send requested data to CPU 
+							num = Integer.parseInt(cmd[1]);
+							System.out.println(read(num));	// send requested data back to CPU 
 						}
 
-						//  else it will be 2, which means CPu is requesting to 
-						//  write data at a particular address
-						else if(j[0].equals("2"))   
+						//  First token: 2 -> write
+						else if(cmd[0].equals("2"))   
 						{
-							int i1 = Integer.parseInt(j[1]);
-							int i2 = Integer.parseInt(j[2]);
-							write(i1,i2); // invoke the write function
+							int i1 = Integer.parseInt(cmd[1]);
+							int i2 = Integer.parseInt(cmd[2]);
+							write(i1,i2);					// write value to specific address
+						}
+						else if(cmd[0].equals("3")) 
+						{
+							CPU_cmd.close();
+							System.exit(0);
 						}
 					}
 					else 
@@ -75,26 +60,22 @@ public class Memory {
 				else
 					break;
 			}
-
-			// ----------------------------------------------------
-			//			CPU_cmd.close();
+			// ----------------------------------------------------------------------------------
+			CPU_cmd.close();
 		}catch (Throwable t){
 			t.printStackTrace();
 		}
 	}
 
-	//	Save the instruction to the memory array
-	//	throw error if cannot find file
+	//	Save the instruction to Memory
 	public static void saveInstruction(String filename){
 		try{
-			//			Scanner file = new Scanner(new File(filename));
-//			Scanner file = new Scanner(new File("src\\"+filename));
-			Scanner file = new Scanner(new File(filename));
+//			Scanner file = new Scanner(new File("src\\"+filename)); // for running in Eclipse
+			Scanner file = new Scanner(new File(filename));			// run in UNIX or Command Line
 			int i = 0;
 			String st;
 			
 			while(file.hasNextLine()){
-//				System.out.println("Loop: "+i);
 				if (file.hasNextInt()){
 					mem[i] = file.nextInt();
 					file.nextLine();
@@ -113,24 +94,21 @@ public class Memory {
 			}
 			file.close();
 		}catch(FileNotFoundException e){
-
 		}
-
 	}
 
-
-	//
+	// Write data to given address
 	public static void write(int addr,int data){
-		if (addr >2000){
+		if (addr >=2000){
 			throw new Error("Write Failure: Maximum Size is 2000");
 		}else{
 			mem[addr] = data;
 		}
 	}
 
-	//
+	// Write data to given address
 	public static int read(int addr){
-		if (addr >2000){
+		if (addr >=2000){
 			throw new Error("Read Failure: Maximum Size is 2000");
 		}else{
 			return mem[addr];
